@@ -11,13 +11,13 @@ import warnings
 
 import pandas as pd
 
-from src.f import get_lhs, get_spot_ticker
-from src.restapi import RestAPI
+from src.sym_utils import get_lhs, get_spot_ticker
+from src.rest_api import CEXRESTAPI
 
 warnings.filterwarnings('ignore')
 
 
-class RestAPIFuture(RestAPI):
+class CEXRESTAPIFuture(CEXRESTAPI):
     def __init__(self, public_key="", private_key="", timeout=10, check_certificate=True, use_nonce=False):
         super().__init__('https://cryptofacilities.com/derivatives', public_key, private_key, timeout,
                          check_certificate, use_nonce, 'api/v3')
@@ -54,11 +54,15 @@ class RestAPIFuture(RestAPI):
             signature = self._sign(endpoint, postData, nonce=nonce)
             authentHeaders = {"APIKey": self.public_key, "Nonce": nonce, "Authent": signature}
         else:
+            print(f'postData={postData}')
+            print(f'endpoint={endpoint}')
             signature = self._sign(endpoint, postData)
             authentHeaders = {"APIKey": self.public_key, "Authent": signature}
 
         # create request
+        print(f'first part = {self.apiPath + endpoint}')
         url_path = self.apiPath + endpoint + "?" + postUrl
+        print(f'url_path = {url_path}')
         request = urllib2.Request(url_path, str.encode(postBody), authentHeaders)
         request.get_method = lambda: requestType
 
@@ -284,9 +288,11 @@ class RestAPIFuture(RestAPI):
             - monthly M
             - quaterly Q
         """
+        ticker = future_type.split('_')[1]
         all_tickers_info = pd.DataFrame(
             ast.literal_eval(self.get_instruments().replace("true", "True").replace("false", "False"))['instruments'])
-        futures = all_tickers_info[all_tickers_info['symbol'].str.contains(future_type)]
+        futures = all_tickers_info[all_tickers_info['symbol'].apply(lambda x: x.split('_')[0]).str.contains('fi')]
+        futures = futures[futures['symbol'].apply(lambda x: x.split('_')[1]).str.contains(ticker)]
         futures['lastTradingTime'] = futures['lastTradingTime'].apply(
             lambda x: pd.datetime.strptime(x, "%Y-%m-%dT%H:%M:%S.%fZ"))
         if expiry == "M":

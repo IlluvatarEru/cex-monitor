@@ -1,0 +1,2 @@
+SPOT = 'spot'
+FUTURE = 'future'

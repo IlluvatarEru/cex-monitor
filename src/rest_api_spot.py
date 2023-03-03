@@ -4,13 +4,13 @@ import hmac
 import urllib.parse
 import warnings
 
-from src.f import format_ticker_for_spot_api
-from src.restapi import RestAPI
+from src.sym_utils import format_ticker_for_spot_api
+from src.rest_api import CEXRESTAPI
 
 warnings.filterwarnings('ignore')
 
 
-class RestAPISpot(RestAPI):
+class CEXRESTAPISpot(CEXRESTAPI):
     def __init__(self, public_key="", private_key="", timeout=10, check_certificate=True, use_nonce=False):
         super().__init__('https://api.kraken.com',
                          public_key, private_key, timeout, check_certificate, use_nonce, '0')
@@ -51,7 +51,7 @@ class RestAPISpot(RestAPI):
         data['nonce'] = self._nonce()
 
         url_path = '/' + self.api_version + '/private/' + method
-        print(url_path)
+        print(f'signing: {url_path}')
         headers = {
             'API-Key': self.public_key,
             'API-Sign': self._sign(data, url_path)
